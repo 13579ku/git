@@ -1018,11 +1018,14 @@ function equipSkill(sid){
     if(player.equippedInnerSkills.includes(sid)){showToast('已经上阵','warn');return}
     if(player.equippedInnerSkills.length>=slots.inner){showToast('心法栏位已满','warn');return}
     player.equippedInnerSkills.push(sid);
+    showToast(s.icon+' '+s.name+' 已上阵','info');
   }else{
     if(player.equippedWeaponSkills.includes(sid)){showToast('已经上阵','warn');return}
     if(player.equippedWeaponSkills.length>=slots.weapon){showToast('功法栏位已满','warn');return}
     player.equippedWeaponSkills.push(sid);
+    showToast(s.icon+' '+s.name+' 已上阵','info');
   }
+  $('modal-skills').classList.add('active');
   if(gameState!=='battle')rSkills();
   else showSkillMenu();
 }
@@ -1040,8 +1043,31 @@ function unequipSkill(sid){
     const idx=player.equippedWeaponSkills.indexOf(sid);
     if(idx>-1)player.equippedWeaponSkills.splice(idx,1);
   }
+  showToast(s.icon+' '+s.name+' 已卸下','warn');
+  $('modal-skills').classList.add('active');
   if(gameState!=='battle')rSkills();
   else showSkillMenu();
+}
+
+// AUTO EQUIP: when learning a new skill, auto-equip if slot available
+function autoEquipSkill(sid){
+  const s=SKILLS[sid];
+  if(!s)return;
+  const isInner=s.reqWeapon==='any';
+  const slots=getMaxSkillSlots();
+  if(isInner){
+    if(!player.equippedInnerSkills.includes(sid)&&player.equippedInnerSkills.length<slots.inner){
+      player.equippedInnerSkills.push(sid);
+      addLog(s.icon+' '+s.name+' 自动装备到心法栏位','skill');
+    }
+  }else{
+    const wt=getWeaponType();
+    if(s.reqWeapon!==wt)return;
+    if(!player.equippedWeaponSkills.includes(sid)&&player.equippedWeaponSkills.length<slots.weapon){
+      player.equippedWeaponSkills.push(sid);
+      addLog(s.icon+' '+s.name+' 自动装备到功法栏位','skill');
+    }
+  }
 }
 
 // SKILLS MODAL
@@ -1484,7 +1510,7 @@ const SCENES={
       const cleared=wins>=3;
       if(cleared&&!gameFlags.clearedMountain){
         gameFlags.clearedMountain=true;
-        if(!player.skills.includes('flame_palm')){player.skills.push('flame_palm');addLog('在山寨密室中领悟了烈焰掌！','skill')}
+        if(!player.skills.includes('flame_palm')){player.skills.push('flame_palm');autoEquipSkill('flame_palm');addLog('在山寨密室中领悟了烈焰掌！','skill')}
         // Weapon reward choice
         if(!gameFlags.mountainWeaponChosen){
           gameFlags.mountainWeaponChosen=true;
@@ -1572,7 +1598,7 @@ const SCENES={
         if(!gameFlags.caveLooted){
           gameFlags.caveLooted=true;
           html+=`<div class="narrative" style="border-color:#7cacdb">你在角落里找到了一本残缺的武学秘籍——"落英神剑"的剑法心得，你仔细研读后有所领悟。</div>`;
-          if(!player.skills.includes('falling_bloom')){player.skills.push('falling_bloom');addLog('领悟了落英神剑！','skill')}
+          if(!player.skills.includes('falling_bloom')){player.skills.push('falling_bloom');autoEquipSkill('falling_bloom');addLog('领悟了落英神剑！','skill')}
         }
         $('scene-body').innerHTML=html;
         $('actions-area').innerHTML=`<button class="action-btn primary" onclick="goScene('final')">🐲 前往魔教总坛</button><button class="action-btn" onclick="goScene('town')">先回去准备</button>`;
@@ -1620,14 +1646,14 @@ const SCENES={
       if(gameFlags.girlAlive&&gameFlags.girlHelped){
         html+=`<div class="dialogue"><div class="dialogue-speaker">苏小蝶（上前一步，展开手中的证据）</div><div class="dialogue-text">沈青云，你看看这些！这是你写给魔教的密信副本，这是银两往来的账本，这是你下令伏击正道弟子的亲笔指令！铁证如山，你还有什么好说的？</div></div>`;
         html+=`<div class="dialogue"><div class="dialogue-speaker">沈青云（脸色铁青）</div><div class="dialogue-text">你……你从哪里弄到这些的！</div></div>`;
-        if(!player.skills.includes('ripple_walk')){player.skills.push('ripple_walk');addLog('苏小蝶传授了你凌波微步！','skill')}
+        if(!player.skills.includes('ripple_walk')){player.skills.push('ripple_walk');autoEquipSkill('ripple_walk');addLog('苏小蝶传授了你凌波微步！','skill')}
       }else if(gameFlags.girlAlive&&!gameFlags.girlHelped){
         html+=`<div class="dialogue"><div class="dialogue-speaker">苏小蝶（从暗处现身）</div><div class="dialogue-text">少侠，我查到沈青云暗通魔教的证据后本想独自行动，没想到你也走到了这一步。虽然你当初没有相信我……但今日，让我们联手。</div></div>`;
-        if(!player.skills.includes('ripple_walk')){player.skills.push('ripple_walk');addLog('苏小蝶传授了你凌波微步！','skill')}
+        if(!player.skills.includes('ripple_walk')){player.skills.push('ripple_walk');autoEquipSkill('ripple_walk');addLog('苏小蝶传授了你凌波微步！','skill')}
       }
 
       // Additional skills based on preparation
-      if(!player.skills.includes('nine_yang')){player.skills.push('nine_yang');addLog('决战前领悟了九阳神功！','skill')}
+      if(!player.skills.includes('nine_yang')){player.skills.push('nine_yang');autoEquipSkill('nine_yang');addLog('决战前领悟了九阳神功！','skill')}
 
       if(gameFlags.caveListened){
         html+=`<div class="dialogue"><div class="dialogue-speaker">你（冷声）</div><div class="dialogue-text">沈青云，血影长老已经把一切都告诉我了。三年前你主动投靠魔教，出卖清风镇，编造天机图的谎言借刀杀人……今日，就是你偿还的时候。</div></div>`;
@@ -2559,6 +2585,7 @@ function learnSkillAtSchool(id,cost){
   if(player.gold<cost){showToast('银两不足','warn');return}
   player.gold-=cost;
   player.skills.push(id);
+  autoEquipSkill(id);
   addLog('在武馆学会了 '+SKILLS[id].name,'skill');
   showToast('学会了 '+SKILLS[id].name+'！','success');
   showItemPopup('skill',SKILLS[id]);
@@ -2644,7 +2671,7 @@ function girlChoice(choice){
     gameFlags.girlAlive=true;
     addLog('与苏小蝶结盟，一起调查沈青云','important');
     addAffinity('girl',25);
-    if(!player.skills.includes('heal')){player.skills.push('heal');addLog('苏小蝶传授了你回春术！','skill')}
+    if(!player.skills.includes('heal')){player.skills.push('heal');autoEquipSkill('heal');addLog('苏小蝶传授了你回春术！','skill')}
     player.inventory.antidote=(player.inventory.antidote||0)+2;
     addLog('苏小蝶赠送了解毒丸 x2','loot');
     let html=`<div class="dialogue"><div class="dialogue-speaker">苏小蝶（面露惊喜）</div><div class="dialogue-text">你也注意到不对劲了？太好了！我教你一招回春术，行走江湖用得着。另外这些解毒丸也给你——魔教的人喜欢用毒。</div></div>`;
@@ -2782,7 +2809,7 @@ function caveChoiceListen(){
   html+=`<div class="dialogue"><div class="dialogue-speaker">血影长老</div><div class="dialogue-text">知道太多的人，活不长！</div></div>`;
 
   addLog('得知了沈青云与魔教勾结的全部真相','important');
-  if(!player.skills.includes('north_sea')){player.skills.push('north_sea');addLog('从血影长老的功法中领悟了北冥神功！','skill')}
+  if(!player.skills.includes('north_sea')){player.skills.push('north_sea');autoEquipSkill('north_sea');addLog('从血影长老的功法中领悟了北冥神功！','skill')}
 
   $('scene-body').innerHTML=html;
   $('actions-area').innerHTML=`<button class="action-btn danger" onclick="startBattle('elder')">⚔️ 迎战！</button>`;
@@ -2971,7 +2998,7 @@ function trainingDef(){
   player.baseDef+=3;
   recalcStats();
   addAffinity('master',15);
-  if(!player.skills.includes('golden_bell')){player.skills.push('golden_bell');addLog('领悟了金钟罩！','skill')}
+  if(!player.skills.includes('golden_bell')){player.skills.push('golden_bell');autoEquipSkill('golden_bell');addLog('领悟了金钟罩！','skill')}
   addLog('白发老者传授内功心法，防御+3！','important');
   let html=`<div class="dialogue"><div class="dialogue-speaker">白发老者</div><div class="dialogue-text">气沉丹田，意守中宫……感受内力在经脉中流转，形成一层看不见的屏障。这就是金钟罩的入门心法。</div></div>`;
   html+=`<div class="narrative">你盘膝而坐，按老者所言运气，渐渐感到体内有一层暖流涌动。防御力永久提升了3点。</div>`;
@@ -2992,7 +3019,7 @@ function trainingSpd(){
   player.baseSpd+=5;
   recalcStats();
   addAffinity('master',20);
-  if(!player.skills.includes('shadow')){player.skills.push('shadow');addLog('领悟了暗影步！','skill')}
+  if(!player.skills.includes('shadow')){player.skills.push('shadow');autoEquipSkill('shadow');addLog('领悟了暗影步！','skill')}
   addLog('白发老者传授身法绝技，集气+5！','important');
   let html=`<div class="dialogue"><div class="dialogue-speaker">白发老者（突然出招）</div><div class="dialogue-text">看好了——</div></div>`;
   html+=`<div class="narrative" style="border-color:#7cacdb">老者的身影突然变得模糊，你甚至看不清他是如何移动的。等他再次出现时，已经站在你身后十步之外。</div>`;
@@ -3030,7 +3057,7 @@ function herbQuestComplete(){
   player.inventory.hp_pot_l=(player.inventory.hp_pot_l||0)+3;
   player.inventory.mp_pot_l=(player.inventory.mp_pot_l||0)+3;
   player.inventory.elixir=(player.inventory.elixir||0)+1;
-  if(!player.skills.includes('poison_palm')){player.skills.push('poison_palm');addLog('柳青青传授了毒砂掌！','skill')}
+  if(!player.skills.includes('poison_palm')){player.skills.push('poison_palm');autoEquipSkill('poison_palm');addLog('柳青青传授了毒砂掌！','skill')}
   addLog('任务完成：药师采药，获得大量珍稀丹药！','loot');
   let html=`<div class="dialogue"><div class="dialogue-speaker">柳青青（喜极而泣）</div><div class="dialogue-text">太好了！有了灵芝仙草，我马上就能配出解药！镇上中毒的人有救了！</div></div>`;
   html+=`<div class="dialogue"><div class="dialogue-speaker">柳青青</div><div class="dialogue-text">少侠大恩大德无以为报。这些是我这些年调配的最好丹药，全部给你。另外……我从毒理学中悟出了一门防身术——毒砂掌。掌心蕴毒，触之即伤。你行走江湖，多一门手段总是好的。</div></div>`;
@@ -3131,6 +3158,7 @@ function teachOldman(){
   player.gold-=100;
   if(!player.skills.includes('dugu')){
     player.skills.push('dugu');
+    autoEquipSkill('dugu');
     addLog('老乞丐传授了你独孤九剑！','skill');
   }else{
     player.baseAtk+=5;recalcStats();
@@ -3197,10 +3225,10 @@ function updateBattleUI(){
   $('enemy-sprite').classList.toggle('charged',eCharge>=100);
   
   let pb='';player.buffs.forEach(b=>pb+=`<span class="buff-icon" title="${b.name}">${b.icon}</span>`);
-  if(player.poison)pb+=`<span class="buff-icon" title="中毒">☠️</span>`;
+  if(player.poison&&player.poison.length>0)pb+=`<span class="buff-icon" title="中毒">☠️</span>`;
   $('player-buffs').innerHTML=pb;
   let eb='';battleState.enemy.buffs.forEach(b=>eb+=`<span class="buff-icon">${b.icon}</span>`);
-  if(battleState.enemy.poison)eb+=`<span class="buff-icon" title="中毒">☠️</span>`;
+  if(battleState.enemy.poison&&battleState.enemy.poison.length>0)eb+=`<span class="buff-icon" title="中毒">☠️</span>`;
   $('enemy-buffs').innerHTML=eb;
 }
 
@@ -3910,6 +3938,7 @@ function endBattle(won){
       if(xuanAttackSkills.length>0){
         const randomSkill=xuanAttackSkills[Math.floor(Math.random()*xuanAttackSkills.length)];
         player.skills.push(randomSkill);
+        autoEquipSkill(randomSkill);
         const s=SKILLS[randomSkill];
         addLog(`获得 ${s.icon} ${s.name}！`,'skill');
         showItemPopup('skill',s);
@@ -3918,14 +3947,14 @@ function endBattle(won){
     }
     if(e.id==='sword_ghost'){
       gameFlags.defeatedSwordGhost=true;
-      if(!player.skills.includes('ice_sword')){player.skills.push('ice_sword');addLog('从无名剑客的剑意中领悟了寒冰剑意！','skill')}
-      if(!player.skills.includes('falling_bloom')){player.skills.push('falling_bloom');addLog('领悟了落英神剑！','skill')}
+      if(!player.skills.includes('ice_sword')){player.skills.push('ice_sword');autoEquipSkill('ice_sword');addLog('从无名剑客的剑意中领悟了寒冰剑意！','skill')}
+      if(!player.skills.includes('falling_bloom')){player.skills.push('falling_bloom');autoEquipSkill('falling_bloom');addLog('领悟了落英神剑！','skill')}
       player.baseAtk+=3;recalcStats();
       addLog('剑道境界提升，攻击力永久+3！','important');
     }
     if(e.id==='poison_king'){
       gameFlags.defeatedPoisonKing=true;
-      if(!player.skills.includes('poison_palm')){player.skills.push('poison_palm');addLog('从五毒老祖的毒术中领悟了毒砂掌！','skill')}
+      if(!player.skills.includes('poison_palm')){player.skills.push('poison_palm');autoEquipSkill('poison_palm');addLog('从五毒老祖的毒术中领悟了毒砂掌！','skill')}
       if(gameFlags.herbQuestAccepted&&!gameFlags.herbQuestDone){
         gameFlags.herbQuestDone=true;
         addLog('取得了万毒经，可以回去交差了','important');
@@ -3933,7 +3962,7 @@ function endBattle(won){
     }
     if(e.id==='shadow_lord'){
       gameFlags.defeatedShadowLord=true;
-      if(!player.skills.includes('dugu')){player.skills.push('dugu');addLog('从暗影之主的剑法中领悟了独孤九剑！','skill')}
+      if(!player.skills.includes('dugu')){player.skills.push('dugu');autoEquipSkill('dugu');addLog('从暗影之主的剑法中领悟了独孤九剑！','skill')}
       player.baseAtk+=5;player.baseDef+=3;player.baseSpd+=3;recalcStats();
       addLog('击败暗影之主！全属性大幅提升！','important');
     }
@@ -3956,7 +3985,7 @@ function endBattle(won){
       if(gameFlags.c2_tournamentRound>=3){
         gameFlags.c2_tournamentDone=true;
         addLog('英雄大会比武冠军！','important');
-        if(!player.skills.includes('ch2_palm')){player.skills.push('ch2_palm');addLog('观摩群雄武艺，领悟了大金刚掌！','skill')}
+        if(!player.skills.includes('ch2_palm')){player.skills.push('ch2_palm');autoEquipSkill('ch2_palm');addLog('观摩群雄武艺，领悟了大金刚掌！','skill')}
         player.gold+=300;
         addAffinity('c2_shenTiangao',15);
       }else{
@@ -3969,7 +3998,7 @@ function endBattle(won){
     if(e.id==='cult_elder_c2' && gameFlags.c2_started && !gameFlags.c2_cultHideoutFound){
       gameFlags.c2_cultHideoutFound=true;
       addLog('击败了魔教长老，获取了巢穴的位置情报！','important');
-      if(!player.skills.includes('ch2_eagle_eye')){player.skills.push('ch2_eagle_eye');addLog('从魔教长老身上搜到了鹰眼术秘籍！','skill')}
+      if(!player.skills.includes('ch2_eagle_eye')){player.skills.push('ch2_eagle_eye');autoEquipSkill('ch2_eagle_eye');addLog('从魔教长老身上搜到了鹰眼术秘籍！','skill')}
       endBattleTransition('luoyang');
       return;
     }
@@ -3977,7 +4006,7 @@ function endBattle(won){
     if(e.id==='cult_new_leader'){
       gameFlags.c2_defeatedCultLeader=true;
       addLog('击败了魔教真正的新任教主——沈无涯！','important');
-      if(!player.skills.includes('ch2_qinggong')){player.skills.push('ch2_qinggong');addLog('从沈无涯的身法中领悟了梯云纵！','skill')}
+      if(!player.skills.includes('ch2_qinggong')){player.skills.push('ch2_qinggong');autoEquipSkill('ch2_qinggong');addLog('从沈无涯的身法中领悟了梯云纵！','skill')}
       player.gold+=500;
       addAffinity('c2_shenTiangao',20);
       endBattleTransition('ch2_victory');
@@ -3989,7 +4018,7 @@ function endBattle(won){
         gameFlags.c2_banditCleared=true;
         addLog('击败了匪首赤须虎，古道恢复了太平！','important');
         player.gold+=150;
-        if(!player.skills.includes('ch2_blade_xuan')){player.skills.push('ch2_blade_xuan');addLog('从匪首的刀法中领悟了裂空刀！','skill')}
+        if(!player.skills.includes('ch2_blade_xuan')){player.skills.push('ch2_blade_xuan');autoEquipSkill('ch2_blade_xuan');addLog('从匪首的刀法中领悟了裂空刀！','skill')}
         endBattleTransition('luoyang');
         return;
       }
@@ -4005,7 +4034,7 @@ function endBattle(won){
       if(e.id==='ghost_king'){
         gameFlags.c2_ghostDone=true;
         addLog('降服了荒宅鬼王，古寺恢复了清净！','important');
-        if(!player.skills.includes('ch2_spirit_heal')){player.skills.push('ch2_spirit_heal');addLog('从降妖过程中领悟了灵气归元！','skill')}
+        if(!player.skills.includes('ch2_spirit_heal')){player.skills.push('ch2_spirit_heal');autoEquipSkill('ch2_spirit_heal');addLog('从降妖过程中领悟了灵气归元！','skill')}
         player.gold+=180;
         endBattleTransition('luoyang');
         return;
@@ -4014,7 +4043,7 @@ function endBattle(won){
         gameFlags.c2_templeWins=(gameFlags.c2_templeWins||0)+1;
         addLog('降妖进度：'+gameFlags.c2_templeWins+'/3','important');
         if(gameFlags.c2_templeWins>=1&&!player.skills.includes('ch2_hidden_xuan')){
-          player.skills.push('ch2_hidden_xuan');addLog('在古寺中发现了飞燕回旋的秘籍！','skill');
+          player.skills.push('ch2_hidden_xuan');autoEquipSkill('ch2_hidden_xuan');addLog('在古寺中发现了飞燕回旋的秘籍！','skill');
         }
         endBattleTransition('ch2_temple');
         return;
@@ -4026,7 +4055,7 @@ function endBattle(won){
         gameFlags.c2_arenaCleared=true;
         addLog('击败了地下拳王铜锤，成为新冠军！','important');
         player.gold+=250;
-        if(!player.skills.includes('ch2_iron_shirt')){player.skills.push('ch2_iron_shirt');addLog('从铜锤的横练功夫中领悟了铁布衫！','skill')}
+        if(!player.skills.includes('ch2_iron_shirt')){player.skills.push('ch2_iron_shirt');autoEquipSkill('ch2_iron_shirt');addLog('从铜锤的横练功夫中领悟了铁布衫！','skill')}
         endBattleTransition('luoyang');
         return;
       }
@@ -4041,9 +4070,9 @@ function endBattle(won){
     if(e.id==='secret_keeper'){
       gameFlags.c2_defeatedSecretKeeper=true;
       addLog('击败了千年守秘人！','important');
-      if(!player.skills.includes('ch2_hidden_di')){player.skills.push('ch2_hidden_di');addLog('守秘人传授了千蛛万毒手！','skill')}
-      if(!player.skills.includes('ch2_sword_di')){player.skills.push('ch2_sword_di');addLog('守秘人传授了破岳剑法！','skill')}
-      if(!player.skills.includes('ch2_blade_di')){player.skills.push('ch2_blade_di');addLog('守秘人传授了噬魂刀法！','skill')}
+      if(!player.skills.includes('ch2_hidden_di')){player.skills.push('ch2_hidden_di');autoEquipSkill('ch2_hidden_di');addLog('守秘人传授了千蛛万毒手！','skill')}
+      if(!player.skills.includes('ch2_sword_di')){player.skills.push('ch2_sword_di');autoEquipSkill('ch2_sword_di');addLog('守秘人传授了破岳剑法！','skill')}
+      if(!player.skills.includes('ch2_blade_di')){player.skills.push('ch2_blade_di');autoEquipSkill('ch2_blade_di');addLog('守秘人传授了噬魂刀法！','skill')}
       player.baseAtk+=5;player.baseDef+=3;player.baseSpd+=3;recalcStats();
       addLog('守秘人的力量融入了你的体内，属性大幅提升！','important');
       endBattleTransition('ch2_secret_realm');
@@ -4058,7 +4087,7 @@ function endBattle(won){
         gameFlags.c3_defeatedGeneral=true;
         gameFlags.c3_reachedSummit=true;
         addLog('击败了魔教大将军！通往山顶的道路已经打通！','important');
-        if(!player.skills.includes('ch3_blade_tian')){player.skills.push('ch3_blade_tian');addLog('从大将军的刀法中领悟了灭世魔刀！','skill')}
+        if(!player.skills.includes('ch3_blade_tian')){player.skills.push('ch3_blade_tian');autoEquipSkill('ch3_blade_tian');addLog('从大将军的刀法中领悟了灭世魔刀！','skill')}
         player.gold+=300;
         endBattleTransition('ch3_camp');
         return;
@@ -4067,7 +4096,7 @@ function endBattle(won){
         gameFlags.c3_pathWins=(gameFlags.c3_pathWins||0)+1;
         addLog('登山进度：'+gameFlags.c3_pathWins+'/4','important');
         if(gameFlags.c3_pathWins===2&&!player.skills.includes('ch3_sword_di')){
-          player.skills.push('ch3_sword_di');addLog('在山路上发现了万剑归宗的残卷！','skill');
+          player.skills.push('ch3_sword_di');autoEquipSkill('ch3_sword_di');addLog('在山路上发现了万剑归宗的残卷！','skill');
         }
         endBattleTransition('ch3_path');
         return;
@@ -4078,7 +4107,7 @@ function endBattle(won){
     if(e.id==='final_boss'){
       gameFlags.c3_defeatedFinalBoss=true;
       addLog('封印了万魔之主·天魔！','important');
-      if(!player.skills.includes('ch3_sword_tian')){player.skills.push('ch3_sword_tian');addLog('从天魔的力量中领悟了一剑破天！','skill')}
+      if(!player.skills.includes('ch3_sword_tian')){player.skills.push('ch3_sword_tian');autoEquipSkill('ch3_sword_tian');addLog('从天魔的力量中领悟了一剑破天！','skill')}
       player.gold+=800;
       endBattleTransition('ch3_victory');
       return;
@@ -4090,7 +4119,7 @@ function endBattle(won){
         gameFlags.c3_banditKingDone=true;
         addLog('击败了天山匪王！商路恢复了安全！','important');
         player.gold+=250;
-        if(!player.skills.includes('ch3_blade_di')){player.skills.push('ch3_blade_di');addLog('从匪王处获得了霸王斩的秘籍！','skill')}
+        if(!player.skills.includes('ch3_blade_di')){player.skills.push('ch3_blade_di');autoEquipSkill('ch3_blade_di');addLog('从匪王处获得了霸王斩的秘籍！','skill')}
         endBattleTransition('ch3_camp');
         return;
       }
@@ -4107,7 +4136,7 @@ function endBattle(won){
       if(e.id==='ruin_guardian'){
         gameFlags.c3_ruinDone=true;
         addLog('通过了远古遗迹的全部试炼！','important');
-        if(!player.skills.includes('ch3_hidden_tian')){player.skills.push('ch3_hidden_tian');addLog('遗迹传承——天机暗器！','skill')}
+        if(!player.skills.includes('ch3_hidden_tian')){player.skills.push('ch3_hidden_tian');autoEquipSkill('ch3_hidden_tian');addLog('遗迹传承——天机暗器！','skill')}
         player.gold+=280;
         endBattleTransition('ch3_camp');
         return;
@@ -4178,22 +4207,22 @@ function levelUp(){
 
   let ns=null;
   const wt=getWeaponType();
-  if(player.level===2&&!player.skills.includes('heal')){player.skills.push('heal');ns=SKILLS.heal}
-  if(player.level===3&&!player.skills.includes('wind_blade')&&wt==='sword'){player.skills.push('wind_blade');ns=SKILLS.wind_blade}
-  if(player.level===3&&!player.skills.includes('flame_blade')&&wt==='blade'){player.skills.push('flame_blade');ns=SKILLS.flame_blade}
-  if(player.level===3&&!player.skills.includes('poison_palm')&&wt==='hidden'){player.skills.push('poison_palm');ns=SKILLS.poison_palm}
-  if(player.level===3&&!player.skills.includes('shadow')&&!ns){player.skills.push('shadow');ns=SKILLS.shadow}
-  if(player.level===5&&!player.skills.includes('thunder')){player.skills.push('thunder');ns=SKILLS.thunder}
-  if(player.level===6&&!player.skills.includes('golden_bell')){player.skills.push('golden_bell');ns=SKILLS.golden_bell}
-  if(player.level===8&&!player.skills.includes('ripple_walk')){player.skills.push('ripple_walk');ns=SKILLS.ripple_walk}
-  if(player.level===10&&wt==='sword'&&!player.skills.includes('sword_qi')){player.skills.push('sword_qi');ns=SKILLS.sword_qi}
-  if(player.level===10&&wt==='blade'&&!player.skills.includes('blade_blood')){player.skills.push('blade_blood');ns=SKILLS.blade_blood}
-  if(player.level===10&&wt==='hidden'&&!player.skills.includes('hidden_ice')){player.skills.push('hidden_ice');ns=SKILLS.hidden_ice}
-  if(player.level===12&&!player.skills.includes('nine_yang')){player.skills.push('nine_yang');ns=SKILLS.nine_yang}
-  if(player.level===15&&wt==='sword'&&!player.skills.includes('sword_heaven')){player.skills.push('sword_heaven');ns=SKILLS.sword_heaven}
-  if(player.level===15&&wt==='blade'&&!player.skills.includes('blade_destroy')){player.skills.push('blade_destroy');ns=SKILLS.blade_destroy}
-  if(player.level===15&&wt==='hidden'&&!player.skills.includes('hidden_shadow')){player.skills.push('hidden_shadow');ns=SKILLS.hidden_shadow}
-  if(player.level===18&&!player.skills.includes('north_sea')){player.skills.push('north_sea');ns=SKILLS.north_sea}
+  if(player.level===2&&!player.skills.includes('heal')){player.skills.push('heal');ns=SKILLS.heal;autoEquipSkill('heal')}
+  if(player.level===3&&!player.skills.includes('wind_blade')&&wt==='sword'){player.skills.push('wind_blade');ns=SKILLS.wind_blade;autoEquipSkill('wind_blade')}
+  if(player.level===3&&!player.skills.includes('flame_blade')&&wt==='blade'){player.skills.push('flame_blade');ns=SKILLS.flame_blade;autoEquipSkill('flame_blade')}
+  if(player.level===3&&!player.skills.includes('poison_palm')&&wt==='hidden'){player.skills.push('poison_palm');ns=SKILLS.poison_palm;autoEquipSkill('poison_palm')}
+  if(player.level===3&&!player.skills.includes('shadow')&&!ns){player.skills.push('shadow');ns=SKILLS.shadow;autoEquipSkill('shadow')}
+  if(player.level===5&&!player.skills.includes('thunder')){player.skills.push('thunder');ns=SKILLS.thunder;autoEquipSkill('thunder')}
+  if(player.level===6&&!player.skills.includes('golden_bell')){player.skills.push('golden_bell');ns=SKILLS.golden_bell;autoEquipSkill('golden_bell')}
+  if(player.level===8&&!player.skills.includes('ripple_walk')){player.skills.push('ripple_walk');ns=SKILLS.ripple_walk;autoEquipSkill('ripple_walk')}
+  if(player.level===10&&wt==='sword'&&!player.skills.includes('sword_qi')){player.skills.push('sword_qi');ns=SKILLS.sword_qi;autoEquipSkill('sword_qi')}
+  if(player.level===10&&wt==='blade'&&!player.skills.includes('blade_blood')){player.skills.push('blade_blood');ns=SKILLS.blade_blood;autoEquipSkill('blade_blood')}
+  if(player.level===10&&wt==='hidden'&&!player.skills.includes('hidden_ice')){player.skills.push('hidden_ice');ns=SKILLS.hidden_ice;autoEquipSkill('hidden_ice')}
+  if(player.level===12&&!player.skills.includes('nine_yang')){player.skills.push('nine_yang');ns=SKILLS.nine_yang;autoEquipSkill('nine_yang')}
+  if(player.level===15&&wt==='sword'&&!player.skills.includes('sword_heaven')){player.skills.push('sword_heaven');ns=SKILLS.sword_heaven;autoEquipSkill('sword_heaven')}
+  if(player.level===15&&wt==='blade'&&!player.skills.includes('blade_destroy')){player.skills.push('blade_destroy');ns=SKILLS.blade_destroy;autoEquipSkill('blade_destroy')}
+  if(player.level===15&&wt==='hidden'&&!player.skills.includes('hidden_shadow')){player.skills.push('hidden_shadow');ns=SKILLS.hidden_shadow;autoEquipSkill('hidden_shadow')}
+  if(player.level===18&&!player.skills.includes('north_sea')){player.skills.push('north_sea');ns=SKILLS.north_sea;autoEquipSkill('north_sea')}
   // Give basic skills for current weapon type if missing
   if(wt==='blade'&&!player.skills.includes('basic_blade')){player.skills.push('basic_blade')}
   if(wt==='hidden'&&!player.skills.includes('basic_hidden')){player.skills.push('basic_hidden')}
@@ -4465,14 +4494,14 @@ function ch2_investigateStep(){
   }else if(step===1){
     gameFlags.c2_investigateStep=2;
     addLog('确认了幕后黑手是沈无涯','important');
-    if(!player.skills.includes('ch2_sword_xuan')){player.skills.push('ch2_sword_xuan');addLog('在调查过程中发现了清风剑式的残页！','skill')}
+    if(!player.skills.includes('ch2_sword_xuan')){player.skills.push('ch2_sword_xuan');autoEquipSkill('ch2_sword_xuan');addLog('在调查过程中发现了清风剑式的残页！','skill')}
   }else if(step===2){
     gameFlags.c2_investigateStep=3;
     gameFlags.c2_cultInvestigated=true;
     addLog('掌握了魔教的全部情报！','important');
     player.gold+=100;
     if(!player.skills.includes('ch2_eagle_eye')&&!player.skills.includes('shadow')){
-      player.skills.push('ch2_eagle_eye');addLog('密信中记载了鹰眼术的修炼方法！','skill');
+      player.skills.push('ch2_eagle_eye');autoEquipSkill('ch2_eagle_eye');addLog('密信中记载了鹰眼术的修炼方法！','skill');
     }
   }
   goScene('ch2_cult_investigate');
